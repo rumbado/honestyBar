@@ -8,7 +8,23 @@ async function routes(fastify, options) {
 
   // Get current user's cart
   fastify.get('/', 
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Cart'], 
+        summary: 'Get current user\'s cart',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              userId: { type: 'string' },
+              items: { type: 'array', items: { type: 'object' } },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' }
+            }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const cart = await cartService.getCart(request.user.id);
       reply.send(cart);
@@ -20,6 +36,8 @@ async function routes(fastify, options) {
     {
       preHandler: [fastify.authenticate],
       schema: {
+        tags: ['Cart'],
+        summary: 'Add product to cart',
         body: {
           type: 'object',
           required: ['productId'],
@@ -49,7 +67,18 @@ async function routes(fastify, options) {
 
   // Remove product from cart
   fastify.delete('/items/:productId',
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Cart'],
+        summary: 'Remove product from cart',
+        params: {
+          type: 'object',
+          properties: {
+            productId: { type: 'string' }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const cart = await cartService.removeFromCart(
         request.user.id,
@@ -61,7 +90,18 @@ async function routes(fastify, options) {
 
   // Clear cart (user can clear their own cart, admin can clear any cart)
   fastify.delete('/:userId?',
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Cart'], 
+        summary: 'Clear cart',
+        params: {
+          type: 'object',
+          properties: {
+            userId: { type: 'string' }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const targetUserId = request.params.userId || request.user.id;
       
@@ -77,7 +117,12 @@ async function routes(fastify, options) {
 
   // Checkout (purchase) cart
   fastify.post('/checkout',
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Cart'], 
+        summary: 'Clear cart and add to purchase history',
+      }
+     },
     async (request, reply) => {
       const cart = await cartService.getCart(request.user.id);
       
@@ -98,7 +143,18 @@ async function routes(fastify, options) {
 
   // Get purchase history
   fastify.get('/history/:userId?',
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Cart'], 
+        summary: 'Get purchase history',
+        params: {
+          type: 'object',
+          properties: {
+            userId: { type: 'string' }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const targetUserId = request.params.userId || request.user.id;
       

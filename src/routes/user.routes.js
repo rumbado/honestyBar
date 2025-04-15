@@ -6,7 +6,36 @@ async function routes(fastify, options) {
   await userService.initializeStorage();
 
   // Login route
-  fastify.post('/login', async (request, reply) => {
+  fastify.post('/login',
+    {
+      schema: {
+        tags: ['Users'], 
+        summary: 'User login',
+        body: {
+          type: 'object',
+          required: ['name', 'password'],
+          properties: {
+            name: { type: 'string' },
+            password: { type: 'string' }
+          }
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              token: { type: 'string' }
+            }
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' }
+            }
+          }
+        }
+      }
+    },
+     async (request, reply) => {
     const { name, password } = request.body;
 
     const user = await userService.findByUsername(name);
@@ -32,7 +61,32 @@ async function routes(fastify, options) {
 
   // Create new user (admin only)
   fastify.post('/',
-    { preHandler: [fastify.authenticate, authorizeAdmin] },
+    { preHandler: [fastify.authenticate, authorizeAdmin],
+      schema: {
+        tags: ['Users'],
+        summary: 'Create a new user',
+        description: 'Admin only',
+        body: {
+          type: 'object',
+          required: ['name', 'password', 'role'],
+          properties: {
+            name: { type: 'string' },
+            password: { type: 'string' },
+            role: { type: 'string', enum: ['admin', 'user'] }
+          }
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              role: { type: 'string' }
+            }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const newUser = await userService.createUser(request.body);
       reply.code(201).send(newUser);
@@ -41,7 +95,30 @@ async function routes(fastify, options) {
 
   // Delete user (admin only)
   fastify.delete('/:id',
-    { preHandler: [fastify.authenticate, authorizeAdmin] },
+    { preHandler: [fastify.authenticate, authorizeAdmin],
+      schema: {
+        tags: ['Users'], 
+        summary: 'Delete a user',
+        description: 'Admin only',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          }
+        },
+        response: {
+          204: {
+            type: 'null'
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' }
+            }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       await userService.deleteUser(request.params.id);
       reply.code(204).send();
@@ -50,7 +127,28 @@ async function routes(fastify, options) {
 
   // Get current user profile
   fastify.get('/me',
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Users'], 
+        summary: 'Get current user profile',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              role: { type: 'string' }
+            }
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' }
+            }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const user = await userService.findByUsername(request.user.name);
       if (!user) {

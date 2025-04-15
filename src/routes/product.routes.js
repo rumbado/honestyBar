@@ -7,7 +7,18 @@ async function routes(fastify, options) {
 
   // Get all products (active only for regular users)
   fastify.get('/', 
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Products'], 
+        summary: 'Get all products',
+        response: {
+          200: {
+            type: 'array',
+            items: { type: 'object' }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const products = await productService.getProducts();
       
@@ -22,7 +33,29 @@ async function routes(fastify, options) {
 
   // Get single product
   fastify.get('/:id', 
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Products'], 
+        summary: 'Get a product by ID',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          }
+        },
+        response: {
+          200: {
+            type: 'object'
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' }
+            }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       const product = await productService.getProduct(request.params.id);
       
@@ -46,6 +79,9 @@ async function routes(fastify, options) {
     { 
       preHandler: [fastify.authenticate, authorizeAdmin],
       schema: {
+        tags: ['Products'], 
+        summary: 'Create a new product',
+        description: 'Admin only',
         body: {
           type: 'object',
           required: ['name', 'cost', 'price'],
@@ -69,6 +105,9 @@ async function routes(fastify, options) {
     { 
       preHandler: [fastify.authenticate, authorizeAdmin],
       schema: {
+        tags: ['Products'], 
+        summary: 'Update a product',
+        description: 'Admin only',
         body: {
           type: 'object',
           properties: {
@@ -96,7 +135,30 @@ async function routes(fastify, options) {
 
   // Delete product (admin only)
   fastify.delete('/:id',
-    { preHandler: [fastify.authenticate, authorizeAdmin] },
+    { preHandler: [fastify.authenticate, authorizeAdmin],
+      schema: {
+        tags: ['Products'], 
+        summary: 'Delete a product',
+        description: 'Admin only',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          }
+        },
+        response: {
+          204: {
+            description: 'No Content'
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' }
+            }
+          }
+        }
+      }
+     },
     async (request, reply) => {
       try {
         await productService.deleteProduct(request.params.id);
